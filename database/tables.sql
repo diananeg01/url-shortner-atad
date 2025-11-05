@@ -1,4 +1,4 @@
-create table if not exists test(id int);
+drop table if exists test;
 
 create type status_type as enum ('active', 'inactive');
 

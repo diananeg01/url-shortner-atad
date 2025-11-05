@@ -14,7 +14,7 @@ func main() {
 	conn := database.GetDB()
 	var variable any
 
-	conn.QueryRow("SELECT id from test").Scan(&variable)
+	conn.QueryRow("SELECT 1").Scan(&variable)
 	fmt.Println(variable)
 
 	http.HandleFunc("/", p.TestTitle)
