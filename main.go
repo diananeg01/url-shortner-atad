@@ -14,12 +14,18 @@ func main() {
 	conn := database.GetDB()
 	var variable any
 
-	conn.QueryRow("SELECT 1").Scan(&variable)
+	errQuery := conn.QueryRow("SELECT 1").Scan(&variable)
+	if errQuery != nil {
+		return
+	}
 	fmt.Println(variable)
 
 	http.HandleFunc("/", p.TestTitle)
 	http.HandleFunc("/line", p.Httpserver)
 
 	println("Server running on http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		return
+	}
 }
