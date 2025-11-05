@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/diananeg01/url-shortner-atad/database"
-	p "github.com/diananeg01/url-shortner-atad/frontend"
 	"net/http"
+
+	"github.com/diananeg01/url-shortner-atad/database"
+	"github.com/diananeg01/url-shortner-atad/frontend"
 )
 
 func main() {
@@ -20,8 +21,8 @@ func main() {
 	}
 	fmt.Println(variable)
 
-	http.HandleFunc("/", p.TestTitle)
-	http.HandleFunc("/line", p.Httpserver)
+	http.HandleFunc("/", frontend.UrlShortner)
+	http.HandleFunc("/line", frontend.TestChartRender)
 
 	println("Server running on http://localhost:8080")
 	err := http.ListenAndServe(":8080", nil)
