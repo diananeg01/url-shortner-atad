@@ -23,6 +23,7 @@ func main() {
 
 	http.HandleFunc("/", frontend.UrlShortner)
 	http.HandleFunc("/line", frontend.TestChartRender)
+	http.HandleFunc("/redirect/{url}", frontend.RedirectURL)
 
 	println("Server running on http://localhost:8080")
 	err := http.ListenAndServe(":8080", nil)

@@ -3,10 +3,13 @@ package frontend
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/diananeg01/url-shortner-atad/database"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
+	"github.com/google/uuid"
 	g "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -30,21 +33,28 @@ func TestChartRender(w http.ResponseWriter, _ *http.Request) {
 	line.Render(w)
 }
 
-func TestTitle(w http.ResponseWriter, r *http.Request) {
-	// Render the HTML page
-	_ = Page("Hello", H1(g.Text("Hello, Gomponents!"))).Render(w)
-}
-
 func UrlShortner(w http.ResponseWriter, r *http.Request) {
 	var (
-		url   = ""
-		chars = ""
+		url          = ""
+		chars        = ""
+		shortenedUrl = ""
 	)
 
 	if r.Method == http.MethodPost {
 		if err := r.ParseForm(); err == nil {
 			url = r.FormValue("url")
 			chars = r.FormValue("chars")
+			shortenedUrl = "https://localhost:8080/redirect" + chars + ""
+
+			conn := database.GetDB()
+
+			urlId := uuid.New()
+			currentTime := time.Now()
+
+			_, errQuery := conn.Exec("INSERT INTO generated_url(url_id, url, short, crea, lupa, status, user_id) values ($1, $2, $3, $4, $5, $6, $7)", urlId, url, chars, currentTime, currentTime, "active", "bda5e4b5-af8b-4c42-8733-09be226c8695")
+			if errQuery != nil {
+				return
+			}
 		}
 	}
 
@@ -76,10 +86,25 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 					}
 					return Div(
 						P(Class("mb-2"), g.Text(fmt.Sprintf("URL: %s", url))),
-						P(Class("mb-4"), g.Text(fmt.Sprintf("Custom characters: %s", chars))),
+						P(Class("mb-4"), g.Text("Shortened URL: "), A(Href(url), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
 					)
 				}(),
 			),
 		),
 	).Render(w)
+}
+
+func RedirectURL(w http.ResponseWriter, r *http.Request) {
+	shortUrl := r.PathValue("url")
+
+	conn := database.GetDB()
+	var url string
+
+	errQuery := conn.QueryRow("SELECT url FROM generated_url where short = $1", shortUrl).Scan(&url)
+	if errQuery != nil {
+		return
+	}
+	fmt.Println(url)
+
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
