@@ -1,16 +1,22 @@
 package frontend
 
 import (
+	"math/rand"
+
 	"github.com/go-echarts/go-echarts/v2/opts"
 	g "maragu.dev/gomponents"
 	c "maragu.dev/gomponents/components"
-	"math/rand"
+	. "maragu.dev/gomponents/html"
 )
 
 func Page(title string, body g.Node) g.Node {
 	return c.HTML5(
 		c.HTML5Props{
 			Title: title,
+			Head: []g.Node{
+				// Example: add Tailwind CSS or your own stylesheet
+				Script(Src("https://cdn.tailwindcss.com")),
+			},
 			Body: []g.Node{
 				body,
 			},
