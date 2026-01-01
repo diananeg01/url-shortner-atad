@@ -34,7 +34,7 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err == nil {
 			url = r.FormValue("url")
 			chars = r.FormValue("chars")
-			shortenedUrl = "https://localhost:8080/redirect" + chars + ""
+			shortenedUrl = "https://localhost:8080/redirect/" + chars + ""
 
 			urlId := uuid.New()
 			currentTime := time.Now()
@@ -47,37 +47,66 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = Page("Generate short URL",
-		Div(
-			H1(Class("text-3xl font-bold mb-4"), g.Text("Welcome, "+email+"!")),
-			A(Href("/logout"), g.Text("Logout")),
-			P(Class("text-gray-700 mb-6"), g.Text("This is a simple URL shortener.")),
-
-			Form(
-				Method("POST"),
-				Action("/submit"),
-				Div(
-					Label(For("url"), Class("block mb-1 font-semibold"), g.Text("URL")),
-					Input(Type("text"), ID("url"), Name("url"), Class("border rounded w-full p-2 mb-4")),
+		Div(Class("h-dvh bg-gray-900"),
+			Div(Class("min-h-full"),
+				Nav(Class("bg-gray-800/50"),
+					Div(Class("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"),
+						Div(Class("flex items-center justify-between h-16"),
+							Div(Class("flex items-center"),
+								Div(Class("flex-shrink-0"), A(Href("/"), Class("text-white font-semibold"), g.Text("URL Shortner"))),
+								Div(Class("hidden md:block"),
+									Div(Class("ml-10 flex items-baseline space-x-4"),
+										A(Href("/dashboard"), Class("rounded-md bg-gray-950/50 px-3 py-2 text-sm font-medium text-white"), g.Text("Dashboard")),
+										A(Href("/line"), Class("rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white"), g.Text("Analytics")),
+										A(Href("/logout"), Class("rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white"), g.Text("Logout")),
+									),
+								),
+							),
+							Div(Class("hidden md:block"),
+								Div(Class("ml-4 flex items-center md:ml-6"), P(Class("ml-3 text-sm font-medium text-white"), g.Text("Signed in as "+email))),
+							),
+						),
+					),
 				),
-				Div(
-					Label(For("chars"), Class("block mb-1 font-semibold"), g.Text("Custom characters")),
-					Input(Type("chars"), ID("chars"), Name("chars"), Class("border rounded w-full p-2 mb-4")),
-				),
-				Button(Type("submit"), Class("bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"), g.Text("Submit")),
-			),
 
-			Div(
-				Class("border-t pt-4"),
-				H2(Class("text-2xl font-semibold mb-2"), g.Text("Submitted Data")),
-				func() g.Node {
-					if url == "" && chars == "" {
-						return P(Class("text-gray-500 italic"), g.Text("No data submitted yet."))
-					}
-					return Div(
-						P(Class("mb-2"), g.Text(fmt.Sprintf("URL: %s", url))),
-						P(Class("mb-4"), g.Text("Shortened URL: "), A(Href(url), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
-					)
-				}(),
+				Header(Class("relative bg-gray-800 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10"),
+					Div(Class("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"),
+						H1(Class("text-3xl font-bold text-white"), g.Text("Welcome to URL Shortner!")),
+					),
+				),
+
+				Main(
+					Div(Class("max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"),
+						Form(
+							Method("POST"),
+							Action("/submit"),
+							Div(
+								Label(For("url"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("URL")),
+								Div(Class("mt-2"), Input(Type("text"), ID("url"), Name("url"), Class("border rounded w-full p-2 mb-4"))),
+							),
+							Div(
+								Label(For("chars"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("Custom characters")),
+								Div(Class("mt-2"), Input(Type("chars"), ID("chars"), Name("chars"), Class("border rounded w-full p-2 mb-4"))),
+							),
+							Div(
+								Button(Type("submit"), Class("flex w-50 justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"), g.Text("Submit")),
+							),
+						),
+
+						Div(Class("border-t mt-10"),
+							H2(Class("mt-10 text-center text-2xl/9 font-bold tracking-tight text-white"), g.Text("Submitted Data")),
+							func() g.Node {
+								if url == "" && chars == "" {
+									return P(Class("mt-10 text-center text-sm/6 text-gray-400"), g.Text("No data submitted yet."))
+								}
+								return Div(
+									P(Class("mb-2 text-center text-sm/6 text-gray-400"), g.Text(fmt.Sprintf("URL: %s", url))),
+									P(Class("mb-4 text-center text-sm/6 text-gray-400"), g.Text("Shortened URL: "), A(Href(url), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
+								)
+							}(),
+						),
+					),
+				),
 			),
 		),
 	).Render(w)

@@ -13,19 +13,31 @@ import (
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		Page("Login",
-			Div(
-				H1(Class("text-3xl font-bold mb-4"), g.Text("Log in")),
-				Form(
-					Method("POST"),
-					Action("/login"),
+			Div(Class("h-dvh bg-gray-900"),
+				Div(Class("flex min-h-full flex-col justify-center px-6 py-12 lg:px-8"),
+					Div(Class("sm:mx-auto sm:w-full sm:max-w-sm"),
+						Img(Src("https://tailwindcss.com/plus-assets/img/logos/mark.svg?color=indigo&shade=500"), Class("mx-auto h-10 w-auto")),
+						H2(Class("mt-10 text-center text-2xl/9 font-bold tracking-tight text-white"), g.Text("Log in to your account")),
+					),
+					Div(Class("mt-10 sm:mx-auto sm:w-full sm:max-w-sm"),
+						Form(Method("POST"),
+							Action("/login"),
+							Div(
+								Label(For("email"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("Email:")),
+								Div(Class("mt-2"), Input(Type("email"), Name("email"), Class("border rounded w-full p-2 mb-4"), ID("email"))),
+							),
+							Div(
+								Label(For("password"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("Password:")),
+								Div(Class("mt-2"), Input(Type("password"), Name("password"), Class("border rounded w-full p-2 mb-4"), ID("password"))),
+							),
 
-					Label(For("email"), Class("block mb-1 font-semibold"), g.Text("Email:")),
-					Input(Type("email"), Name("email"), Class("border rounded w-full p-2 mb-4"), ID("email")), Br(),
+							Div(
+								Button(Type("submit"), Class("flex w-full justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"), g.Text("Login")),
+							),
+						),
 
-					Label(For("password"), Class("block mb-1 font-semibold"), g.Text("Password:")),
-					Input(Type("password"), Name("password"), Class("border rounded w-full p-2 mb-4"), ID("password")), Br(),
-
-					Button(Type("submit"), Class("bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"), g.Text("Login")),
+						P(Class("mt-10 text-center text-sm/6 text-gray-400"), g.Text("If you don't have an account: "), A(Href("/register"), Class("font-semibold text-indigo-400 hover:text-indigo-300"), g.Text("Register"))),
+					),
 				),
 			),
 		).Render(w)
