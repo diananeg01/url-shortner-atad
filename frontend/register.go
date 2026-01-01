@@ -1,6 +1,7 @@
 package frontend
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/diananeg01/url-shortner-atad/database"
@@ -68,6 +69,16 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "There was an error when creating the user: "+err.Error(), http.StatusConflict)
 		return
 	}
+
+	// Set session cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_user",
+		Value:    fmt.Sprint(email),
+		Path:     "/",
+		MaxAge:   3600, // seconds (1 hour)
+		HttpOnly: true,
+		Secure:   false, // set true in production
+	})
 
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }

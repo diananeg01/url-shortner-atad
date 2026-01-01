@@ -52,7 +52,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var userID string
 	var hash string
 	conn := database.GetDB()
-	err := conn.QueryRow(`SELECT user_id, password_hash FROM user_data WHERE email = $1`, email).
+	err := conn.QueryRow(`SELECT email, password_hash FROM user_data WHERE email = $1`, email).
 		Scan(&userID, &hash)
 
 	if err != nil {
@@ -71,6 +71,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Name:     "session_user",
 		Value:    fmt.Sprint(userID),
 		Path:     "/",
+		MaxAge:   3600, // seconds (1 hour)
 		HttpOnly: true,
 		Secure:   false, // set true in production
 	})

@@ -12,17 +12,13 @@ import (
 )
 
 func UrlShortner(w http.ResponseWriter, r *http.Request) {
-	userID, ok := getSessionUser(r)
+	email, ok := getSessionUser(r)
 	if !ok {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	conn := database.GetDB()
-
-	var email string
-	conn.QueryRow(`SELECT email FROM user_data WHERE user_id = $1`, userID).
-		Scan(&email)
 
 	var (
 		url          = ""
@@ -128,13 +124,11 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 }
 
 // SESSION HELPER
-func getSessionUser(r *http.Request) (int, bool) {
+func getSessionUser(r *http.Request) (string, bool) {
 	cookie, err := r.Cookie("session_user")
 	if err != nil || cookie.Value == "" {
-		return 0, false
+		return "", false
 	}
 
-	var id int
-	fmt.Sscanf(cookie.Value, "%d", &id)
-	return id, true
+	return cookie.Value, true
 }
