@@ -6,34 +6,24 @@ import (
 	"time"
 
 	"github.com/diananeg01/url-shortner-atad/database"
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/go-echarts/go-echarts/v2/types"
 	"github.com/google/uuid"
 	g "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
 
-func TestChartRender(w http.ResponseWriter, _ *http.Request) {
-	// create a new line instance
-	line := charts.NewLine()
-	// set some global options like Title/Legend/ToolTip or anything else
-	line.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{Theme: types.ThemeWesteros}),
-		charts.WithTitleOpts(opts.Title{
-			Title:    "Line example in Westeros theme",
-			Subtitle: "Line chart rendered by the http server this time",
-		}))
-
-	// Put data into instance
-	line.SetXAxis([]string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"}).
-		AddSeries("Category A", generateLineItems()).
-		AddSeries("Category B", generateLineItems()).
-		SetSeriesOptions(charts.WithLineChartOpts(opts.LineChart{Smooth: opts.Bool(true)}))
-	line.Render(w)
-}
-
 func UrlShortner(w http.ResponseWriter, r *http.Request) {
+	userID, ok := getSessionUser(r)
+	if !ok {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	conn := database.GetDB()
+
+	var email string
+	conn.QueryRow(`SELECT email FROM user_data WHERE user_id = $1`, userID).
+		Scan(&email)
+
 	var (
 		url          = ""
 		chars        = ""
@@ -45,8 +35,6 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 			url = r.FormValue("url")
 			chars = r.FormValue("chars")
 			shortenedUrl = "https://localhost:8080/redirect" + chars + ""
-
-			conn := database.GetDB()
 
 			urlId := uuid.New()
 			currentTime := time.Now()
@@ -60,7 +48,8 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 
 	_ = Page("Generate short URL",
 		Div(
-			H1(Class("text-3xl font-bold mb-4"), g.Text("Welcome!")),
+			H1(Class("text-3xl font-bold mb-4"), g.Text("Welcome, "+email+"!")),
+			A(Href("/logout"), g.Text("Logout")),
 			P(Class("text-gray-700 mb-6"), g.Text("This is a simple URL shortener.")),
 
 			Form(
@@ -107,4 +96,16 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(url)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+// SESSION HELPER
+func getSessionUser(r *http.Request) (int, bool) {
+	cookie, err := r.Cookie("session_user")
+	if err != nil || cookie.Value == "" {
+		return 0, false
+	}
+
+	var id int
+	fmt.Sscanf(cookie.Value, "%d", &id)
+	return id, true
 }
