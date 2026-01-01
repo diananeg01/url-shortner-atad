@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/diananeg01/url-shortner-atad/database"
 	"github.com/diananeg01/url-shortner-atad/frontend"
@@ -40,8 +39,8 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_user",
 		Value:    "",
-		Expires:  time.Unix(0, 0),
 		Path:     "/",
+		MaxAge:   -1,
 		HttpOnly: true,
 	})
 
