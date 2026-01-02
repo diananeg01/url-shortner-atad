@@ -2,6 +2,7 @@ package frontend
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -30,6 +31,16 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err == nil {
 			url = r.FormValue("url")
 			chars = r.FormValue("chars")
+			if chars == "" {
+				const alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+				rand.Seed(time.Now().UnixNano())
+				b := make([]byte, 8)
+				for i := range b {
+					b[i] = alphanumeric[rand.Intn(len(alphanumeric))]
+				}
+				chars = string(b)
+			}
 			shortenedUrl = "https://localhost:8080/redirect/" + chars + ""
 
 			urlId := uuid.New()
@@ -114,8 +125,10 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	conn := database.GetDB()
 	var url string
 
-	errQuery := conn.QueryRow("SELECT url FROM generated_url where short = $1", shortUrl).Scan(&url)
+	errQuery := conn.QueryRow("SELECT url FROM generated_url where short = $1 AND status = 'active' AND crea > $2",
+		shortUrl, time.Now().Add(-2*time.Hour)).Scan(&url)
 	if errQuery != nil {
+		http.Error(w, "URL expired or not found", http.StatusNotFound)
 		return
 	}
 	fmt.Println(url)
