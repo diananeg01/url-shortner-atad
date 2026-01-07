@@ -45,6 +45,8 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err == nil {
 			url = r.FormValue("url")
 			chars = r.FormValue("chars")
+			expiresAtForm := r.FormValue("expiresAt")
+
 			if chars == "" {
 				const alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -59,9 +61,26 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 
 			urlId := uuid.New()
 			currentTime := time.Now()
+			expiresAt := time.Time{}
 
-			_, errQuery := conn.Exec("INSERT INTO generated_url(url_id, url, short, crea, lupa, status, user_id) values ($1, $2, $3, $4, $5, $6, $7)", urlId, url, chars, currentTime, currentTime, "active", "bda5e4b5-af8b-4c42-8733-09be226c8695")
+			if expiresAtForm == "" {
+				expiresAt = currentTime.Add(24 * time.Hour)
+			} else {
+				date, errDate := time.Parse("2006-01-02", expiresAtForm)
+				if errDate != nil {
+					http.Error(w, "Error when converting the date: "+errDate.Error(), http.StatusInternalServerError)
+					return
+				}
+				expiresAt = time.Date(
+					date.Year(), date.Month(), date.Day(),
+					currentTime.Hour(), currentTime.Minute(), currentTime.Second(), currentTime.Nanosecond(),
+					time.Local,
+				)
+			}
+
+			_, errQuery := conn.Exec("INSERT INTO generated_url(url_id, url, short, crea, expires_at, user_id) values ($1, $2, $3, $4, $5, $6)", urlId, url, chars, currentTime, expiresAt, user.UserId)
 			if errQuery != nil {
+				http.Error(w, "Error when inserting the generated URL in the db: "+errQuery.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -91,7 +110,7 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 				),
 
 				Header(Class("relative bg-gray-800 after:pointer-events-none after:absolute after:inset-x-0 after:inset-y-0 after:border-y after:border-white/10"),
-					Div(Class("max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"),
+					Div(Class("max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8"),
 						H1(Class("text-3xl font-bold text-white"), g.Text("Welcome to URL Shortner!")),
 					),
 				),
@@ -103,11 +122,15 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 							Action("/submit"),
 							Div(
 								Label(For("url"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("URL")),
-								Div(Class("mt-2"), Input(Type("text"), ID("url"), Name("url"), Class("border rounded w-full p-2 mb-4"))),
+								Div(Class("mt-2"), Input(Type("url"), ID("url"), Name("url"), Class("border rounded w-full p-2 mb-4"))),
 							),
 							Div(
 								Label(For("chars"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("Custom characters")),
-								Div(Class("mt-2"), Input(Type("chars"), ID("chars"), Name("chars"), Class("border rounded w-full p-2 mb-4"))),
+								Div(Class("mt-2"), Input(Type("text"), ID("chars"), Name("chars"), Class("border rounded w-full p-2 mb-4"))),
+							),
+							Div(
+								Label(For("expiresAt"), Class("block text-sm/6 font-medium text-gray-100"), g.Text("Date for expiration")),
+								Div(Class("mt-2"), Input(Type("date"), ID("expiresAt"), Name("expiresAt"), Class("border rounded w-full p-2 mb-4"))),
 							),
 							Div(
 								Button(Type("submit"), Class("flex w-50 justify-center rounded-md bg-indigo-500 px-3 py-1.5 text-sm/6 font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"), g.Text("Submit")),
@@ -120,9 +143,9 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 								if url == "" && chars == "" {
 									return P(Class("mt-10 text-center text-sm/6 text-gray-400"), g.Text("No data submitted yet."))
 								}
-								return Div(
+								return Div( //todo: add qr code
 									P(Class("mb-2 text-center text-sm/6 text-gray-400"), g.Text(fmt.Sprintf("URL: %s", url))),
-									P(Class("mb-4 text-center text-sm/6 text-gray-400"), g.Text("Shortened URL: "), A(Href(url), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
+									P(Class("mb-4 text-center text-sm/6 text-gray-400"), g.Text("Shortened URL: "), A(Href(shortenedUrl), Target("_blank"), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
 								)
 							}(),
 						),
