@@ -11,7 +11,6 @@ create table if not exists user_data (
     status status_type not null
 );
 
-create table if not exists user_analytics (
 create table if not exists sessions (
     session_id uuid primary key,
     user_id uuid not null,
@@ -30,8 +29,7 @@ create table if not exists generated_url (
     url text not null,
     short text not null,
     crea timestamp not null,
-    lupa timestamp not null,
-    status status_type not null,
+    expires_at timestamp not null,
     user_id uuid not null,
     foreign key (user_id) references user_data (user_id)
 );
