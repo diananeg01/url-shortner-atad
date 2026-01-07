@@ -12,6 +12,12 @@ create table if not exists user_data (
 );
 
 create table if not exists user_analytics (
+create table if not exists sessions (
+    session_id uuid primary key,
+    user_id uuid not null,
+    expires_at timestamp not null,
+    foreign key (user_id) references user_data (user_id)
+);
     analytic_id uuid primary key,
     keyname int not null,
     value text not null,

@@ -36,6 +36,12 @@ func main() {
 }
 
 func handleLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session_user")
+	if err == nil {
+		// delete session from DB
+		_ = database.DeleteSession(cookie.Value)
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_user",
 		Value:    "",
