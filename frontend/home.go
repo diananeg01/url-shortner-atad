@@ -1,6 +1,8 @@
 package frontend
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -13,8 +15,20 @@ import (
 )
 
 func UrlShortner(w http.ResponseWriter, r *http.Request) {
-	email, ok := getSessionUser(r)
-	if !ok {
+	cookie, err := r.Cookie("session_user")
+	if err != nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	session, err := database.GetSession(cookie.Value)
+	if err != nil || session.ExpiresAt.Before(time.Now()) {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	user, err := database.GetUserByID(session.UserId)
+	if err != nil {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
@@ -70,7 +84,7 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 								),
 							),
 							Div(Class("hidden md:block"),
-								Div(Class("ml-4 flex items-center md:ml-6"), P(Class("ml-3 text-sm font-medium text-white"), g.Text("Signed in as "+email))),
+								Div(Class("ml-4 flex items-center md:ml-6"), P(Class("ml-3 text-sm font-medium text-white"), g.Text("Signed in as "+user.Email))),
 							),
 						),
 					),
@@ -134,14 +148,4 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(url)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-}
-
-// SESSION HELPER
-func getSessionUser(r *http.Request) (string, bool) {
-	cookie, err := r.Cookie("session_user")
-	if err != nil || cookie.Value == "" {
-		return "", false
-	}
-
-	return cookie.Value, true
 }
