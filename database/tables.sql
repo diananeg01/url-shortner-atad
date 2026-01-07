@@ -17,6 +17,8 @@ create table if not exists sessions (
     expires_at timestamp not null,
     foreign key (user_id) references user_data (user_id)
 );
+
+create table if not exists url_analytics (
     analytic_id uuid primary key,
     keyname int not null,
     value text not null,
