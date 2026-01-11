@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/diananeg01/url-shortner-atad/database"
+	"github.com/diananeg01/url-shortner-atad/model"
 	"github.com/google/uuid"
 	g "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
@@ -96,8 +98,8 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 								Div(Class("flex-shrink-0"), A(Href("/"), Class("text-white font-semibold"), g.Text("URL Shortner"))),
 								Div(Class("hidden md:block"),
 									Div(Class("ml-10 flex items-baseline space-x-4"),
-										A(Href("/dashboard"), Class("rounded-md bg-gray-950/50 px-3 py-2 text-sm font-medium text-white"), g.Text("Dashboard")),
-										A(Href("/line"), Class("rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white"), g.Text("Analytics")),
+										A(Href("/"), Class("rounded-md bg-gray-950/50 px-3 py-2 text-sm font-medium text-white"), g.Text("Dashboard")),
+										A(Href("/myStats"), Class("rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white"), g.Text("User Analytics")),
 										A(Href("/logout"), Class("rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-white/5 hover:text-white"), g.Text("Logout")),
 									),
 								),
@@ -160,15 +162,46 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	shortUrl := r.PathValue("url")
 
 	conn := database.GetDB()
-	var url string
 
-	errQuery := conn.QueryRow("SELECT url FROM generated_url where short = $1 AND status = 'active' AND crea > $2",
-		shortUrl, time.Now().Add(-2*time.Hour)).Scan(&url)
+	var url string
+	var urlId uuid.UUID
+	errQuery := conn.QueryRow("SELECT url_id, url FROM generated_url where short = $1 AND expires_at > $2",
+		shortUrl, time.Now()).Scan(&urlId, &url)
 	if errQuery != nil {
-		http.Error(w, "URL expired or not found", http.StatusNotFound)
+		http.Error(w, "URL expired or not found: "+errQuery.Error(), http.StatusNotFound)
 		return
 	}
 	fmt.Println(url)
+
+	var clickAnalyticId uuid.UUID
+	errClick := conn.QueryRow("update url_analytics set value = value::int + 1 where url_id = $1 and keyname = $2 returning analytic_id", urlId, model.ClickAnalyticKeyname).
+		Scan(&clickAnalyticId)
+	if errors.Is(errClick, sql.ErrNoRows) {
+		_, errUpsertClick := conn.Exec("INSERT INTO url_analytics(analytic_id, keyname, value, url_id) values ($1, $2, $3, $4) on conflict (analytic_id) do UPDATE SET value = excluded.value",
+			uuid.New(), model.ClickAnalyticKeyname, 1, urlId)
+		if errUpsertClick != nil {
+			http.Error(w, "There was an error inserting the click analytic: "+errUpsertClick.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else if errClick != nil {
+		http.Error(w, "There was an error updating the click analytic: "+errClick.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var ip string
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		ip = strings.Split(forwarded, ",")[0]
+	} else {
+		ip = strings.Split(r.RemoteAddr, ":")[0]
+	}
+
+	_, errUpsertVisitor := conn.Exec("INSERT INTO url_analytics(analytic_id, keyname, value, url_id) select $1, $2, $3, $4 where not exists (SELECT 1 FROM url_analytics WHERE url_id = $4 AND value = $3)",
+		uuid.New(), model.VisitAnalyticKeyname, ip, urlId)
+	if errUpsertVisitor != nil {
+		http.Error(w, "There was an error inserting the click analytic: "+errUpsertVisitor.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
