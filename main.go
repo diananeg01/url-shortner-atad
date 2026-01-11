@@ -24,7 +24,7 @@ func main() {
 	http.HandleFunc("/", frontend.UrlShortner)
 	http.HandleFunc("/register", frontend.Register)
 	http.HandleFunc("/login", frontend.Login)
-	http.HandleFunc("/line", frontend.UrlAnalytics)
+	http.HandleFunc("/myStats", frontend.UrlAnalytics)
 	http.HandleFunc("/redirect/{url}", frontend.RedirectURL)
 	http.HandleFunc("/logout", handleLogout)
 
