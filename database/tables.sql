@@ -20,10 +20,10 @@ create table if not exists sessions (
 
 create table if not exists url_analytics (
     analytic_id uuid primary key,
-    keyname int not null,
+    keyname text not null,
     value text not null,
-    user_id uuid not null,
-    foreign key (user_id) references user_data (user_id)
+    url_id uuid not null,
+    foreign key (url_id) references generated_url (url_id)
 );
 
 create table if not exists generated_url (
