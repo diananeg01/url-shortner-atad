@@ -11,3 +11,22 @@
   * url is stored in the database (no rules on unicity yet)
 * no login yet
 * no error handling yet
+
+## Final submission checklist
+
+| User Stories                                                           | Done |
+|------------------------------------------------------------------------|------|
+| I can customize my short link                                          | [x]  |
+| I can view statistics: total clicks, unique visitors                   | [x]  |
+| I can generate a QR code for my short link                             | [x]  |
+| I can set an expiration date for my links                              | [x]  |
+
+
+| Technical Requirements                                                 | Done |
+|------------------------------------------------------------------------|------|
+| RESTful API with endpoints for shortening, redirecting, and analytics  | [x]  |
+| Short code generation (6-8 characters, alphanumeric)                   | [x]  |
+| Collision detection and handling                                       | [ ]  |
+| Rate limiting (e.g., 10 requests/minute per IP)                        | [ ]  |
+| Web dashboard showing all links and statistics                         | [x]  |
+| Database for URLs and click events                                     | [x]  |
