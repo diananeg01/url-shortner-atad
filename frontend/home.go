@@ -2,6 +2,7 @@ package frontend
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -12,6 +13,7 @@ import (
 	"github.com/diananeg01/url-shortner-atad/database"
 	"github.com/diananeg01/url-shortner-atad/model"
 	"github.com/google/uuid"
+	qrcode "github.com/skip2/go-qrcode"
 	g "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -41,6 +43,7 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 		url          = ""
 		chars        = ""
 		shortenedUrl = ""
+		qrBase64     = ""
 	)
 
 	if r.Method == http.MethodPost {
@@ -85,6 +88,19 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Error when inserting the generated URL in the db: "+errQuery.Error(), http.StatusInternalServerError)
 				return
 			}
+
+			qr := simpleQRCode{
+				Content: shortenedUrl,
+				Size:    256,
+			}
+
+			qrBytes, err := qr.Generate()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			qrBase64 = base64.StdEncoding.EncodeToString(qrBytes)
 		}
 	}
 
@@ -145,9 +161,13 @@ func UrlShortner(w http.ResponseWriter, r *http.Request) {
 								if url == "" && chars == "" {
 									return P(Class("mt-10 text-center text-sm/6 text-gray-400"), g.Text("No data submitted yet."))
 								}
-								return Div( //todo: add qr code
+								return Div(
 									P(Class("mb-2 text-center text-sm/6 text-gray-400"), g.Text(fmt.Sprintf("URL: %s", url))),
 									P(Class("mb-4 text-center text-sm/6 text-gray-400"), g.Text("Shortened URL: "), A(Href(shortenedUrl), Target("_blank"), Class("text-blue-500 underline"), g.Text(shortenedUrl))),
+									Img(
+										Src("data:image/png;base64,"+qrBase64),
+										Class("mx-auto mt-4 w-48 h-48"),
+									),
 								)
 							}(),
 						),
@@ -204,4 +224,17 @@ func RedirectURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+type simpleQRCode struct {
+	Content string
+	Size    int
+}
+
+func (code *simpleQRCode) Generate() ([]byte, error) {
+	qrCode, err := qrcode.Encode(code.Content, qrcode.Medium, code.Size)
+	if err != nil {
+		return nil, fmt.Errorf("could not generate a QR code: %v", err)
+	}
+	return qrCode, nil
 }
